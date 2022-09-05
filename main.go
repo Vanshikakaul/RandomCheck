@@ -10,12 +10,13 @@ import (
 
 // checkNumInFile function checks whether the input number
 // is present in the file or not.
-func checkNumInFile(inputNum int, filename string) (int, int) {
 
+func ParseInputFile(filename string) ([]int, error) {
 	fmt.Println("Processing the file.....")
-
-	var data []byte
-	var err error
+	var (
+		data []byte
+		err  error
+	)
 	// read the file exist the fn if the file is not present.
 	if data, err = ioutil.ReadFile(filename); err != nil {
 		log.Fatal(err)
@@ -23,31 +24,71 @@ func checkNumInFile(inputNum int, filename string) (int, int) {
 
 	//convert the byte data to string
 	s := string(data)
+	fmt.Println("s", s)
 
 	//split the string using the ',' delimiter
 	//into string array
 	strArr := strings.Split(s, ",")
 
 	//convert string slice into int slice
-	IntSlice := make([]int, len(strArr))
+	inputArr := make([]int, len(strArr))
 	for i, stt := range strArr {
-		IntSlice[i], _ = strconv.Atoi(stt)
+		inputArr[i], err = strconv.Atoi(stt)
+		if err != nil {
+			return inputArr, err
+		}
+
+	}
+	return inputArr, nil
+}
+
+// checking index of input number and next highest number
+func CheckIndex(inputNum int, inputArr []int) (int, int, int, int) {
+
+	var (
+		nextHighNum      int
+		indexNextHighNum int
+		isfoundgdnum     bool
+	)
+
+	// define map
+	m := make(map[int]int)
+	//coverting array to map where key = number, value= position
+	for i := 0; i < len(inputArr); i++ {
+		m[inputArr[i]] = i + 1
+
+		//take the greater num of the array to find the next greater number.
+		if nextHighNum < inputArr[i] {
+			nextHighNum = inputArr[i]
+		}
 	}
 
-	//sort map by key
-	m, _ := make(map[int]int), err
-	for i := 0; i < len(IntSlice); i++ {
-		m[IntSlice[i]] = i + 1
-	}
-	fmt.Println("Position of next highest elements:", m[inputNum+1])
-	//fmt.Println(inputNum)
+	//Get position of the Number from the sorted map
+	//and check if number exist or not
 
-	n, ok := m[inputNum]
-	if ok == true {
-		return n, m[inputNum+1]
+	if inputNumIndex, ok := m[inputNum]; ok {
+		fmt.Println(fmt.Sprintf("Index of the input num: %+v is at position: %+v", inputNum, inputNumIndex))
+		for key, value := range m {
+
+			if key > inputNum && key <= nextHighNum {
+				nextHighNum = key
+				indexNextHighNum = value
+				isfoundgdnum = true
+			}
+		}
+		if isfoundgdnum {
+			fmt.Println(fmt.Sprintf("Index of the next highest num: %+v is at position: %+v", nextHighNum, indexNextHighNum))
+			return inputNum, inputNumIndex, nextHighNum, indexNextHighNum
+		} else {
+			fmt.Println("No next highest number for input value")
+			return inputNum, inputNumIndex, -1, -1
+		}
+
+	} else {
+		fmt.Println("Input number not found")
+		return inputNum, -1, -1, -1
 	}
-	//return -1 if the input is not present
-	return -1, 0
+
 }
 
 func main() {
@@ -55,18 +96,17 @@ func main() {
 	var inputNum int
 	fmt.Println("Enter number you want to find:")
 	if _, err := fmt.Scan(&inputNum); err != nil {
-		log.Printf("Enter valid number ") //enter cases if number entered is not string.
+		log.Printf("Please enter valid number ")
 		return
 	}
 
 	filename := "./randomNumbers.txt"
-	result, nextVal := checkNumInFile(inputNum, filename)
-
-	if result == -1 || result == 0 {
-		fmt.Println("The number is not present.")
-	} else {
-		fmt.Println("Position of number:", result)
-		fmt.Println("Position of next highest number:", nextVal)
+	fileArr, err := ParseInputFile(filename)
+	if err != nil {
+		log.Println("The file contain Invalid data")
+		return
 	}
+
+	CheckIndex(inputNum, fileArr)
 
 }
